@@ -1,0 +1,183 @@
+/* Reset básico e variáveis de cores */
+:root {
+    --bg-principal: #f4f6f9;
+    --bg-card: #ffffff;
+    --cor-texto: #2d3748;
+    --cor-primaria: #4a5568;
+    --cor-destaque: #3182ce;
+    --cor-destaque-hover: #2b6cb0;
+    --borda: #e2e8f0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--bg-principal);
+    color: var(--cor-texto);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Barra de Topo Fixa */
+.barra-topo {
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--borda);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 15px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.topo-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--cor-destaque);
+}
+
+/* Botão Voltar Inteligente */
+.btn-voltar {
+    background-color: transparent;
+    border: 1px solid var(--cor-destaque);
+    color: var(--cor-destaque);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-voltar:hover {
+    background-color: var(--cor-destaque);
+    color: white;
+}
+
+.oculto {
+    display: none !important;
+}
+
+/* Corpo de Leitura Textual */
+.conteudo-principal {
+    margin-top: 30px;
+    margin-bottom: 80px;
+}
+
+.cabecalho-leitura {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.cabecalho-leitura h2 {
+    font-size: 1.8rem;
+    color: var(--cor-primaria);
+    font-weight: 700;
+}
+
+/* Container do Painel Central */
+.texto-biblico {
+    background-color: var(--bg-card);
+    padding: 35px;
+    border-radius: 12px;
+    border: 1px solid var(--borda);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+/* Layout em Grade para os Botões Modernos */
+.grade-selecao {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.grade-capitulos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Estilo dos Botões de Seleção */
+.btn-opcao {
+    background-color: var(--bg-principal);
+    border: 1px solid var(--borda);
+    color: var(--cor-texto);
+    padding: 14px 10px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.1s, background-color 0.2s, border-color 0.2s;
+}
+
+.btn-opcao:hover {
+    background-color: white;
+    border-color: var(--cor-destaque);
+    color: var(--cor-destaque);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.btn-opcao:active {
+    transform: translateY(0);
+}
+
+/* Layout da Leitura Textual */
+.bloco-leitura {
+    font-family: 'Lora', serif;
+    font-size: 1.25rem;
+    text-align: left;
+}
+
+.bloco-versiculo {
+    margin-bottom: 16px;
+    line-height: 1.7;
+}
+
+.num-versiculo {
+    font-size: 0.8rem;
+    vertical-align: super;
+    font-weight: 700;
+    color: var(--cor-destaque);
+    margin-right: 10px;
+    user-select: none;
+}
+
+.carregando {
+    text-align: center;
+    color: var(--cor-primaria);
+    font-style: italic;
+}
+
+/* Ajustes Responsivos */
+@media (max-width: 600px) {
+    .grade-selecao {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    .texto-biblico {
+        padding: 20px;
+    }
+    .bloco-leitura {
+        font-size: 1.15rem;
+    }
+}
