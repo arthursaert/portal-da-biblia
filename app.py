@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify
 import json
 import os
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -13,7 +14,14 @@ def carregar_dados():
     
     if os.path.exists(caminho_json):
         with open(caminho_json, 'r', encoding='utf-8') as f:
-            dados_biblia = json.load(f)
+            dados_brutos = json.load(f)
+            
+        # Normaliza as chaves do dicionário para garantir correspondência exata
+        dados_biblia = {}
+        for livro, conteudo in dados_brutos.items():
+            # Força o nome do livro a ser limpo e bem decodificado
+            nome_normalizado = urllib.parse.unquote(livro).strip()
+            dados_biblia[nome_normalizado] = conteudo
     else:
         print("Erro: O arquivo 'biblia.json' ainda não foi gerado! Rode o parser_biblia.py primeiro.")
 
@@ -36,17 +44,27 @@ def obter_livros():
 # API: Retorna o texto completo de um capítulo específico de um livro
 @app.route('/api/texto/<livro>/<capitulo>', methods=['GET'])
 def obter_capitulo(livro, capitulo):
-    if livro in dados_biblia and capitulo in dados_biblia[livro]["capitulos"]:
-        versiculos_brutos = dados_biblia[livro]["capitulos"][capitulo]
-        # Ordena os versículos numericamente antes de enviar ao front-end
-        versiculos_ordenados = dict(sorted(versiculos_brutos.items(), key=lambda x: int(x[0])))
-        return jsonify({
-            "sucesso": True,
-            "livro": livro,
-            "capitulo": capitulo,
-            "versiculos": versiculos_ordenados
-        })
-    return jsonify({"sucesso": False, "erro": "Livro ou capítulo não encontrado"}), 404
+    # Decodifica explicitamente o nome do livro vindo da URL (ex: "Jo%C3%A3o" vira "João")
+    livro_decodificado = urllib.parse.unquote(livro).strip()
+    capitulo_str = str(capitulo).strip()
+
+    if livro_decodificado in dados_biblia:
+        capitulos_do_livro = dados_biblia[livro_decodificado]["capitulos"]
+        
+        # Procura o capítulo tratando tanto como String quanto garantindo que exista
+        if capitulo_str in capitulos_do_livro:
+            versiculos_brutos = capitulos_do_livro[capitulo_str]
+            # Ordena os versículos numericamente antes de enviar ao front-end
+            versiculos_ordenados = dict(sorted(versiculos_brutos.items(), key=lambda x: int(x[0])))
+            
+            return jsonify({
+                "sucesso": True,
+                "livro": livro_decodificado,
+                "capitulo": capitulo_str,
+                "versiculos": versiculos_ordenados
+            })
+            
+    return jsonify({"sucesso": False, "erro": f"Livro '{livro_decodificado}' ou capitulo '{capitulo_str}' nao encontrado"}), 404
 
 # Executa o carregamento dos dados direto no escopo global para compatibilidade com o Vercel Serverless
 carregar_dados()

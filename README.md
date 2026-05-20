@@ -1,6 +1,8 @@
 # Portal da Bíblia
 
 Um portal rápido e simples feito com vibe-coding que contém toda a bíblia construído em Python (Flask).
+Acesse nosso site!
+[Site do Portal da Bíblia](https://portaldabiblia.vercel.app)
 
 ## Como executar
 
