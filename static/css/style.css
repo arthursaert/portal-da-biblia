@@ -200,6 +200,35 @@ body {
     font-style: italic;
 }
 
+/* Estilo do Seletor de Versões Moderno */
+.seletor-versao {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--borda);
+    background-color: var(--bg-principal);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--cor-primaria);
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.seletor-versao:focus {
+    border-color: var(--cor-destaque);
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+}
+
+/* Garante o comportamento correto responsivo */
+@media (max-width: 600px) {
+    .seletor-versao {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}
+
 /* Ajustes Responsivos */
 @media (max-width: 600px) {
     .topo-flex {

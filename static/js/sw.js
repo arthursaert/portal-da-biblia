@@ -1,14 +1,12 @@
 const CACHE_NAME = 'portal-biblia-v1';
 const ASSETS = [
   '/',
-  '/templates/index.html',
   '/static/css/style.css',
   '/static/js/app.js',
-  '/manifest.json',
-  '/api/livros'
+  '/manifest.json'
 ];
 
-// Instalação: Salva os arquivos estruturais no cache
+// Instalação do Cache
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -17,7 +15,7 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// Ativação: Limpa caches antigos
+// Ativação e limpeza de versões antigas
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
@@ -32,24 +30,19 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Estratégia Stale-While-Revalidate: Carrega do cache instantaneamente, mas atualiza por trás
+// Estratégia Stale-While-Revalidate (Offline inteligente)
 self.addEventListener('fetch', (e) => {
-  // Ignora requisições do browser (extensões, etc)
   if (!e.request.url.startsWith(self.location.origin)) return;
 
   e.respondWith(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.match(e.request).then((cachedResponse) => {
         const fetchedResponse = fetch(e.request).then((networkResponse) => {
-          // Salva uma cópia da nova resposta no cache (inclusive as rotas da API)
           if (networkResponse.status === 200) {
             cache.put(e.request, networkResponse.clone());
           }
           return networkResponse;
-        }).catch(() => {
-          // Se falhar a rede (tiver offline), retorna o que estiver no cache
-          return cachedResponse;
-        });
+        }).catch(() => cachedResponse);
 
         return cachedResponse || fetchedResponse;
       });

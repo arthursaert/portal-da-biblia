@@ -1,178 +1,161 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const btnVoltar = document.getElementById('btn-voltar');
-    const campoPesquisa = document.getElementById('campo-pesquisa');
-    const tituloLeitura = document.getElementById('titulo-leitura-atual');
-    const areaTextoBiblico = document.getElementById('area-texto-biblico');
+// Estado da aplicação e histórico de navegação
+let estruturaCompleta = {};
+let ordemOriginalLivros = []; // Array para memorizar a ordem exata do JSON
+let versaoSelecionada = "";
+let livroSelecionado = "";
+let telaAtual = "VERSOES"; // Estados: VERSOES, LIVROS, CAPITULOS, TEXTO
 
-    // Estado da navegação do usuário
-    let bancoDadosLivros = [];
-    let livroSelecionado = "";
-    let capituloSelecionado = "";
+// Elementos do DOM
+const areaTextoBiblico = document.getElementById('area-texto-biblico');
+const tituloLeitura = document.getElementById('titulo-leitura-atual');
+const btnVoltar = document.getElementById('btn-voltar');
+const campoPesquisa = document.getElementById('campo-pesquisa');
 
-    // 1. Inicialização: Busca a lista de livros da API do Flask
-    function carregarMenuLivros() {
-        livroSelecionado = "";
-        capituloSelecionado = "";
-        
-        tituloLeitura.textContent = "Selecione um Livro";
+// 1. INICIALIZAÇÃO: Busca e renderiza as versões disponíveis como botões em grade
+async function inicializarPortal() {
+    try {
+        telaAtual = "VERSOES";
+        tituloLeitura.textContent = "Selecione a Versão";
         btnVoltar.classList.add('oculto');
-        
-        // Configura e limpa a barra de pesquisa para filtrar Livros
-        campoPesquisa.classList.remove('oculto');
-        campoPesquisa.value = "";
-        campoPesquisa.placeholder = "Pesquisar livro...";
-        
-        areaTextoBiblico.innerHTML = '<div class="carregando">Carregando livros...</div>';
+        campoPesquisa.classList.add('oculto');
 
-        if (bancoDadosLivros.length > 0) {
-            renderizarGradeLivros(bancoDadosLivros);
+        const response = await fetch('/api/versoes');
+        const versoes = await response.json();
+
+        if (versoes.length === 0) {
+            areaTextoBiblico.innerHTML = "<div class='carregando'>Nenhuma versão encontrada na pasta 'biblias/'.</div>";
             return;
         }
 
-        fetch('/api/livros')
-            .then(response => response.json())
-            .then(livros => {
-                bancoDadosLivros = livros;
-                renderizarGradeLivros(livros);
-            })
-            .catch(err => {
-                console.error('Erro ao buscar livros:', err);
-                areaTextoBiblico.innerHTML = '<div class="carregando" style="color:red;">Falha ao conectar com o servidor.</div>';
-            });
-    }
-
-    // 2. Renderiza a lista de livros no formato de botões
-    function renderizarGradeLivros(livros) {
-        areaTextoBiblico.innerHTML = '';
-        const grade = document.createElement('div');
-        grade.className = 'grade-selecao';
-
-        livros.forEach(livro => {
-            const botao = document.createElement('button');
-            botao.className = 'btn-opcao';
-            botao.setAttribute('data-nome', livro.nome.toLowerCase());
-            botao.textContent = livro.nome;
-            botao.addEventListener('click', () => carregarMenuCapitulos(livro.nome, livro.total_capitulos));
-            grade.appendChild(botao);
+        // Renderiza as versões na grade de seleção
+        let html = '<div class="grade-selecao">';
+        versoes.forEach(v => {
+            let nomeTratado = v.nome || v.id.replace('pt_', '').toUpperCase();
+            html += `<button class="btn-opcao" onclick="selecionarVersao('${v.id}')">${nomeTratado}</button>`;
         });
+        html += '</div>';
+        
+        areaTextoBiblico.innerHTML = html;
 
-        areaTextoBiblico.appendChild(grade);
+        // Configura eventos dos controles superiores
+        btnVoltar.onclick = navegarVoltar;
+        campoPesquisa.oninput = filtrarLivros;
+
+    } catch (erro) {
+        console.error("Erro ao carregar versões:", erro);
+        areaTextoBiblico.innerHTML = "<div class='carregando' style='color:red;'>Erro de conexão com o servidor.</div>";
     }
+}
 
-    // 3. Renderiza os botões numéricos dos capítulos baseados no livro escolhido
-    function carregarMenuCapitulos(nomeLivro, totalCapitulos) {
-        livroSelecionado = nomeLivro;
-        capituloSelecionado = "";
+// 2. SELECIONAR VERSÃO -> CARREGA OS LIVROS DAQUELA VERSÃO
+window.selecionarVersao = async function(versaoId) {
+    versaoSelecionada = versaoId;
+    telaAtual = "LIVROS";
+    areaTextoBiblico.innerHTML = "<div class='carregando'>Carregando livros...</div>";
+    
+    try {
+        const response = await fetch(`/api/estrutura?versao=${versaoSelecionada}`);
+        estruturaCompleta = await response.json();
         
-        tituloLeitura.textContent = nomeLivro;
-        btnVoltar.classList.remove('oculto');
-        
-        // Configura e limpa a barra de pesquisa para filtrar Capítulos
-        campoPesquisa.classList.remove('oculto');
-        campoPesquisa.value = "";
-        campoPesquisa.placeholder = "Pesquisar capítulo...";
-        
-        areaTextoBiblico.innerHTML = '';
-        const gradeCapitulos = document.createElement('div');
-        gradeCapitulos.className = 'grade-capitulos';
+        // Memoriza a ordem exata em que os livros aparecem no arquivo JSON
+        ordemOriginalLivros = Object.keys(estruturaCompleta);
 
-        for (let i = 1; i <= totalCapitulos; i++) {
-            const botaoCap = document.createElement('button');
-            botaoCap.className = 'btn-opcao';
-            botaoCap.setAttribute('data-cap', i.toString());
-            botaoCap.textContent = i;
-            botaoCap.addEventListener('click', () => carregarTextoCapitulo(nomeLivro, i));
-            gradeCapitulos.appendChild(botaoCap);
-        }
-
-        areaTextoBiblico.appendChild(gradeCapitulos);
+        exibirGradeLivros();
+    } catch (erro) {
+        console.error("Erro ao carregar estrutura da versão:", erro);
+        areaTextoBiblico.innerHTML = "<div class='carregando' style='color:red;'>Erro ao carregar os livros desta versão.</div>";
     }
+};
 
-    // 4. Faz a requisição dos versículos e injeta linha por linha na tela
-    function carregarTextoCapitulo(livro, capitulo) {
-        capituloSelecionado = capitulo;
-        
-        tituloLeitura.textContent = `${livro} — Capítulo ${capitulo}`;
-        
-        // Oculta a barra de pesquisa durante a leitura do texto
-        campoPesquisa.classList.add('oculto');
-        
-        areaTextoBiblico.innerHTML = '<div class="carregando">Carregando textos sagrados...</div>';
+function exibirGradeLivros() {
+    telaAtual = "LIVROS";
+    tituloLeitura.textContent = "Selecione um Livro";
+    btnVoltar.classList.remove('oculto');
+    campoPesquisa.classList.remove('oculto');
+    campoPesquisa.value = "";
 
-        fetch(`/api/texto/${encodeURIComponent(livro)}/${capitulo}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.sucesso) {
-                    areaTextoBiblico.innerHTML = '';
-                    
-                    const containerLeitura = document.createElement('div');
-                    containerLeitura.className = 'bloco-leitura';
+    // Renderiza usando a lista guardada na ordem cronológica
+    renderizarGradeLivros(ordemOriginalLivros);
+}
 
-                    Object.keys(data.versiculos).forEach(numVer => {
-                        const blocoVersiculo = document.createElement('div');
-                        blocoVersiculo.className = 'bloco-versiculo';
-
-                        const spanNumero = document.createElement('span');
-                        spanNumero.className = 'num-versiculo';
-                        spanNumero.textContent = numVer;
-
-                        const spanTexto = document.createElement('span');
-                        spanTexto.className = 'texto-versiculo';
-                        spanTexto.textContent = data.versiculos[numVer];
-
-                        blocoVersiculo.appendChild(spanNumero);
-                        blocoVersiculo.appendChild(spanTexto);
-                        containerLeitura.appendChild(blocoVersiculo);
-                    });
-
-                    areaTextoBiblico.appendChild(containerLeitura);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                } else {
-                    areaTextoBiblico.innerHTML = `<div class="carregando" style="color:red;">Erro: ${data.erro}</div>`;
-                }
-            })
-            .catch(err => {
-                console.error('Erro na requisição do texto:', err);
-                areaTextoBiblico.innerHTML = '<div class="carregando" style="color:red;">Erro técnico ao carregar o conteúdo.</div>';
-            });
-    }
-
-    // 5. Lógica da Barra de Pesquisa Contextual Inteligente
-    campoPesquisa.addEventListener('input', (e) => {
-        const termoBusca = e.target.value.trim().toLowerCase();
-        const botoes = areaTextoBiblico.querySelectorAll('.btn-opcao');
-
-        botoes.forEach(botao => {
-            if (livroSelecionado === "") {
-                // Estado 1: Filtrando Livros pelo nome
-                const nomeLivro = botao.getAttribute('data-nome');
-                if (nomeLivro.includes(termoBusca)) {
-                    botao.classList.remove('oculto');
-                } else {
-                    botao.classList.add('oculto');
-                }
-            } else {
-                // Estado 2: Filtrando Capítulos pelo número exato ou inicial
-                const numCapitulo = botao.getAttribute('data-cap');
-                if (termoBusca === "" || numCapitulo.startsWith(termoBusca)) {
-                    botao.classList.remove('oculto');
-                } else {
-                    botao.classList.add('oculto');
-                }
-            }
-        });
+function renderizarGradeLivros(listaLivros) {
+    let html = '<div class="grade-selecao">';
+    listaLivros.forEach(livro => {
+        html += `<button class="btn-opcao" onclick="selecionarLivro('${livro.replace(/'/g, "\\'")}')">${livro}</button>`;
     });
+    html += '</div>';
+    areaTextoBiblico.innerHTML = html;
+}
 
-    // 6. Gerenciador do Botão de Voltar
-    btnVoltar.addEventListener('click', () => {
-        if (capituloSelecionado !== "") {
-            const livroAtivo = bancoDadosLivros.find(l => l.nome === livroSelecionado);
-            carregarMenuCapitulos(livroAtivo.nome, livroAtivo.total_capitulos);
-        } else if (livroSelecionado !== "") {
-            carregarMenuLivros();
-        }
+// 3. FILTRAR LIVROS (Pesquisa mantendo a ordem do JSON)
+function filtrarLivros() {
+    if (telaAtual !== "LIVROS") return;
+    const termo = campoPesquisa.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    // Filtra a partir da sequência cronológica armazenada originalmente
+    const livrosFiltrados = ordemOriginalLivros.filter(livro => {
+        const livroTratado = livro.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return livroTratado.includes(termo);
     });
+    
+    renderizarGradeLivros(livrosFiltrados);
+}
 
-    // Inicializa carregando a tela de livros assim que entra no site
-    carregarMenuLivros();
-});
+// 4. SELECIONAR LIVRO -> EXIBIR GRADE DE CAPÍTULOS
+window.selecionarLivro = function(livro) {
+    livroSelecionado = livro;
+    telaAtual = "CAPITULOS";
+    tituloLeitura.textContent = `${livro}`;
+    btnVoltar.classList.remove('oculto');
+    campoPesquisa.classList.add('oculto');
+
+    const capitulos = estruturaCompleta[livro].capitulos;
+    
+    let html = '<div class="grade-capitulos">';
+    capitulos.forEach(cap => {
+        html += `<button class="btn-opcao" onclick="carregarTextoCapitulo(${cap})">${cap}</button>`;
+    });
+    html += '</div>';
+    areaTextoBiblico.innerHTML = html;
+};
+
+// 5. CARREGAR E EXIBIR O TEXTO DO CAPÍTULO
+window.carregarTextoCapitulo = async function(capitulo) {
+    telaAtual = "TEXTO";
+    areaTextoBiblico.innerHTML = "<div class='carregando'>Carregando capítulo...</div>";
+    tituloLeitura.textContent = `${livroSelecionado} - Capítulo ${capitulo}`;
+    
+    try {
+        const url = `/api/texto?versao=${versaoSelecionada}&livro=${encodeURIComponent(livroSelecionado)}&capitulo=${capitulo}`;
+        const response = await fetch(url);
+        const versiculos = await response.json();
+
+        let html = '<div class="bloco-leitura">';
+        for (const num in versiculos) {
+            html += `
+                <div class="bloco-versiculo">
+                    <span class="num-versiculo">${num}</span>${versiculos[num]}
+                </div>
+            `;
+        }
+        html += '</div>';
+        areaTextoBiblico.innerHTML = html;
+        window.scrollTo(0, 0);
+    } catch (erro) {
+        console.error("Erro ao carregar texto:", erro);
+        areaTextoBiblico.innerHTML = "<div class='carregando' style='color:red;'>Não foi possível renderizar o texto deste capítulo.</div>";
+    }
+};
+
+// 6. GERENCIADOR DO BOTÃO VOLTAR
+function navegarVoltar() {
+    if (telaAtual === "TEXTO") {
+        selecionarLivro(livroSelecionado);
+    } else if (telaAtual === "CAPITULOS") {
+        exibirGradeLivros();
+    } else if (telaAtual === "LIVROS") {
+        inicializarPortal();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', inicializarPortal);

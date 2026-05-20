@@ -40,7 +40,8 @@ python app.py
 ```
 
 ## Créditos:
-- uemerson-silva/Obsidian-Bible-PT (bíblia em markdown)
+- uemerson-silva/Obsidian-Bible-PT (bíblia NVI em Markdown)
+- thiagobodruk/bible (múltiplas versões da bíblia em JSON)
 
 ## Licença
 Este projeto está licenciado sobre a Apache 2.0, leia o arquivo [LICENSE](LICENSE) para mais detalhes. Ao usar o **Portal da Bíblia** em algum de seus projetos, copie o LICENSE para ele e credite Arthur Santos.
