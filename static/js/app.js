@@ -12,28 +12,38 @@ const btnVoltar = document.getElementById('btn-voltar');
 const campoPesquisa = document.getElementById('campo-pesquisa');
 
 // 1. INICIALIZAÇÃO: Busca e renderiza as versões disponíveis como botões em grade
+// ==================== BLOCO DO INICIALIZARPORTAL ====================
 async function inicializarPortal() {
     try {
-        const path = window.location.pathname; // Captura a URL atual
+        const path = window.location.pathname; // Captura a URL (Ex: /leitura/pt_aa/1cronicas/6)
         const rotaLeitura = path.match(/^\/leitura\/([^\/]+)\/([^\/]+)\/(\d+)/);
 
-        // Se o link for direto (ex: /leitura/pt_nvi/genesis/1)
         if (rotaLeitura) {
-            versaoSelecionada = rotaLeitura[1];
-            livroSelecionado = decodeURIComponent(rotaLeitura[2]);
+            // Garante que o ID interno mantenha o .json para falar com a sua API
+            versaoSelecionada = rotaLeitura[1].endsWith('.json') ? rotaLeitura[1] : `${rotaLeitura[1]}.json`;
+            const livroUrl = rotaLeitura[2];
             const capitulo = parseInt(rotaLeitura[3]);
 
-            // Carrega a estrutura em background caso precise voltar para os capítulos/livros
+            // Busca a estrutura original do JSON
             const response = await fetch(`/api/estrutura?versao=${versaoSelecionada}`);
             estruturaCompleta = await response.json();
             ordemOriginalLivros = Object.keys(estruturaCompleta);
 
-            // Carrega direto o texto do capítulo desejado
-            carregarTextoCapitulo(capitulo, false); // false para não duplicar o histórico
+            // Mapeia o nome limpo da URL (1cronicas) de volta para o nome real do JSON (1 Crônicas)
+            livroSelecionado = ordemOriginalLivros.find(livro => {
+                return livro.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "") === livroUrl;
+            });
+
+            if (!livroSelecionado) {
+                livroSelecionado = decodeURIComponent(livroUrl);
+            }
+
+            // Abre o texto direto sem duplicar o histórico
+            carregarTextoCapitulo(capitulo, false);
             return;
         }
 
-        // Fluxo normal caso entre pela raiz do site
+        // --- Daqui para baixo mantém o seu fluxo normal de carregar as VERSÕES ---
         telaAtual = "VERSOES";
         tituloLeitura.textContent = "Selecione a Versão";
         btnVoltar.classList.add('oculto');
@@ -53,14 +63,14 @@ async function inicializarPortal() {
             html += `<button class="btn-opcao" onclick="selecionarVersao('${v.id}')">${nomeTratado}</button>`;
         });
         html += '</div>';
+        
         areaTextoBiblico.innerHTML = html;
-
         btnVoltar.onclick = navegarVoltar;
         campoPesquisa.oninput = filtrarLivros;
 
     } catch (erro) {
         console.error("Erro ao inicializar:", erro);
-        areaTextoBiblico.innerHTML = "<div class='carregando' style='color:red;'>Erro de conexão.</div>";
+        areaTextoBiblico.innerHTML = "<div class='carregando' style='color:red;'>Erro de conexão com o servidor.</div>";
     }
 }
 
@@ -136,16 +146,22 @@ window.selecionarLivro = function(livro) {
     areaTextoBiblico.innerHTML = html;
 };
 
-// 5. CARREGAR E EXIBIR O TEXTO DO CAPÍTULO
+// ==================== BLOCO DO CARREGARTEXTOCAPITULO ====================
 window.carregarTextoCapitulo = async function(capitulo, atualizarHistorico = true) {
     telaAtual = "TEXTO";
     areaTextoBiblico.innerHTML = "<div class='carregando'>Carregando capítulo...</div>";
     tituloLeitura.textContent = `${livroSelecionado} - Capítulo ${capitulo}`;
     
-    // Altera a barra de endereços para /leitura/versao/livro/capitulo
     if (atualizarHistorico) {
-        const livroUrl = encodeURIComponent(livroSelecionado.toLowerCase());
-        history.pushState({ tela: "TEXTO", versao: versaoSelecionada, livro: livroSelecionado, cap: capitulo }, "", `/leitura/${versaoSelecionada}/${livroUrl}/${capitulo}`);
+        // Limpa o .json e remove acentos/espaços para criar o link perfeito
+        const versaoUrl = versaoSelecionada.replace('.json', '');
+        const livroUrl = livroSelecionado.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "");
+        
+        history.pushState(
+            { tela: "TEXTO", versao: versaoSelecionada, livro: livroSelecionado, cap: capitulo }, 
+            "", 
+            `/leitura/${versaoUrl}/${livroUrl}/${capitulo}`
+        );
     }
 
     try {
@@ -182,6 +198,15 @@ function navegarVoltar() {
         inicializarPortal();
         history.pushState(null, "", "/");
     }
+}
+
+// Função auxiliar para limpar o nome do livro para a URL
+function limparNomeLivroParaUrl(nome) {
+    return nome
+        .toLowerCase()
+        .normalize("NFD") // Separa os acentos das letras
+        .replace(/[\u0300-\u036f]/g, "") // Remove os acentos
+        .replace(/\s+/g, ""); // Remove todos os espaços em branco
 }
 
 window.addEventListener('popstate', () => {
