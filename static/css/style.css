@@ -43,12 +43,42 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 15px;
 }
 
 .logo {
     font-size: 1.4rem;
     font-weight: 700;
     color: var(--cor-destaque);
+    white-space: nowrap;
+}
+
+/* Alinhamento dos Controles à Direita */
+.controles-topo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Campo de Pesquisa Elegante */
+.campo-pesquisa {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--borda);
+    background-color: var(--bg-principal);
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: var(--cor-texto);
+    outline: none;
+    width: 200px;
+    transition: all 0.2s ease;
+}
+
+.campo-pesquisa:focus {
+    border-color: var(--cor-destaque);
+    background-color: white;
+    width: 250px;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
 }
 
 /* Botão Voltar Inteligente */
@@ -63,6 +93,7 @@ body {
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .btn-voltar:hover {
@@ -171,6 +202,21 @@ body {
 
 /* Ajustes Responsivos */
 @media (max-width: 600px) {
+    .topo-flex {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+    .controles-topo {
+        width: 100%;
+        justify-content: center;
+    }
+    .campo-pesquisa {
+        width: 100%;
+    }
+    .campo-pesquisa:focus {
+        width: 100%;
+    }
     .grade-selecao {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     }

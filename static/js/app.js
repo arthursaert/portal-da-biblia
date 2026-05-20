@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const btnVoltar = document.getElementById('btn-voltar');
+    const campoPesquisa = document.getElementById('campo-pesquisa');
     const tituloLeitura = document.getElementById('titulo-leitura-atual');
     const areaTextoBiblico = document.getElementById('area-texto-biblico');
 
@@ -15,9 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         tituloLeitura.textContent = "Selecione um Livro";
         btnVoltar.classList.add('oculto');
+        
+        // Configura e limpa a barra de pesquisa para filtrar Livros
+        campoPesquisa.classList.remove('oculto');
+        campoPesquisa.value = "";
+        campoPesquisa.placeholder = "Pesquisar livro...";
+        
         areaTextoBiblico.innerHTML = '<div class="carregando">Carregando livros...</div>';
 
-        // Caso os livros já tenham sido baixados uma vez, evita nova requisição HTTP
         if (bancoDadosLivros.length > 0) {
             renderizarGradeLivros(bancoDadosLivros);
             return;
@@ -35,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // 2. Renderiza a lista de livros no formato de botões organizados em grade
+    // 2. Renderiza a lista de livros no formato de botões
     function renderizarGradeLivros(livros) {
         areaTextoBiblico.innerHTML = '';
         const grade = document.createElement('div');
@@ -44,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         livros.forEach(livro => {
             const botao = document.createElement('button');
             botao.className = 'btn-opcao';
+            botao.setAttribute('data-nome', livro.nome.toLowerCase());
             botao.textContent = livro.nome;
             botao.addEventListener('click', () => carregarMenuCapitulos(livro.nome, livro.total_capitulos));
             grade.appendChild(botao);
@@ -55,10 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Renderiza os botões numéricos dos capítulos baseados no livro escolhido
     function carregarMenuCapitulos(nomeLivro, totalCapitulos) {
         livroSelecionado = nomeLivro;
+        capituloSelecionado = "";
         
         tituloLeitura.textContent = nomeLivro;
-        btnVoltar.textContent = "← Escolher Outro Livro";
         btnVoltar.classList.remove('oculto');
+        
+        // Configura e limpa a barra de pesquisa para filtrar Capítulos
+        campoPesquisa.classList.remove('oculto');
+        campoPesquisa.value = "";
+        campoPesquisa.placeholder = "Pesquisar capítulo...";
         
         areaTextoBiblico.innerHTML = '';
         const gradeCapitulos = document.createElement('div');
@@ -67,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 1; i <= totalCapitulos; i++) {
             const botaoCap = document.createElement('button');
             botaoCap.className = 'btn-opcao';
+            botaoCap.setAttribute('data-cap', i.toString());
             botaoCap.textContent = i;
             botaoCap.addEventListener('click', () => carregarTextoCapitulo(nomeLivro, i));
             gradeCapitulos.appendChild(botaoCap);
@@ -79,8 +92,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function carregarTextoCapitulo(livro, capitulo) {
         capituloSelecionado = capitulo;
         
-        btnVoltar.textContent = `← Ver Capítulos de ${livro}`;
         tituloLeitura.textContent = `${livro} — Capítulo ${capitulo}`;
+        
+        // Oculta a barra de pesquisa durante a leitura do texto
+        campoPesquisa.classList.add('oculto');
+        
         areaTextoBiblico.innerHTML = '<div class="carregando">Carregando textos sagrados...</div>';
 
         fetch(`/api/texto/${encodeURIComponent(livro)}/${capitulo}`)
@@ -110,7 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     areaTextoBiblico.appendChild(containerLeitura);
-                    // Rola a página suavemente para o topo do texto
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
                     areaTextoBiblico.innerHTML = `<div class="carregando" style="color:red;">Erro: ${data.erro}</div>`;
@@ -122,15 +137,38 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // 5. Gerenciador do Botão de Voltar (Sabe se volta para os capítulos ou para os livros)
+    // 5. Lógica da Barra de Pesquisa Contextual Inteligente
+    campoPesquisa.addEventListener('input', (e) => {
+        const termoBusca = e.target.value.trim().toLowerCase();
+        const botoes = areaTextoBiblico.querySelectorAll('.btn-opcao');
+
+        botoes.forEach(botao => {
+            if (livroSelecionado === "") {
+                // Estado 1: Filtrando Livros pelo nome
+                const nomeLivro = botao.getAttribute('data-nome');
+                if (nomeLivro.includes(termoBusca)) {
+                    botao.classList.remove('oculto');
+                } else {
+                    botao.classList.add('oculto');
+                }
+            } else {
+                // Estado 2: Filtrando Capítulos pelo número exato ou inicial
+                const numCapitulo = botao.getAttribute('data-cap');
+                if (termoBusca === "" || numCapitulo.startsWith(termoBusca)) {
+                    botao.classList.remove('oculto');
+                } else {
+                    botao.classList.add('oculto');
+                }
+            }
+        });
+    });
+
+    // 6. Gerenciador do Botão de Voltar
     btnVoltar.addEventListener('click', () => {
         if (capituloSelecionado !== "") {
-            // Se estava lendo o texto, volta para a seleção de capítulos daquele livro
             const livroAtivo = bancoDadosLivros.find(l => l.nome === livroSelecionado);
             carregarMenuCapitulos(livroAtivo.nome, livroAtivo.total_capitulos);
-            capituloSelecionado = "";
         } else if (livroSelecionado !== "") {
-            // Se estava na tela de capítulos, volta para a tela inicial de livros
             carregarMenuLivros();
         }
     });
