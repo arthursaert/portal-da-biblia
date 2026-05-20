@@ -77,6 +77,11 @@ def api_estrutura():
     estrutura_ordenada = dict(sorted(estrutura.items(), key=lambda item: item[1]['id']))
     return jsonify(estrutura_ordenada)
 
+@app.route('/leitura/<versao>/<livro>/<capitulo>')
+def link_direto_leitura(versao, livro, capitulo):
+    # Apenas devolve o index.html padrão. O JavaScript vai ler a URL e abrir o capítulo correto.
+    return render_template('index.html')
+
 @app.route('/api/texto')
 def api_texto():
     """Retorna os versículos de um capítulo específico da versão selecionada."""

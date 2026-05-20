@@ -14,6 +14,26 @@ const campoPesquisa = document.getElementById('campo-pesquisa');
 // 1. INICIALIZAÇÃO: Busca e renderiza as versões disponíveis como botões em grade
 async function inicializarPortal() {
     try {
+        const path = window.location.pathname; // Captura a URL atual
+        const rotaLeitura = path.match(/^\/leitura\/([^\/]+)\/([^\/]+)\/(\d+)/);
+
+        // Se o link for direto (ex: /leitura/pt_nvi/genesis/1)
+        if (rotaLeitura) {
+            versaoSelecionada = rotaLeitura[1];
+            livroSelecionado = decodeURIComponent(rotaLeitura[2]);
+            const capitulo = parseInt(rotaLeitura[3]);
+
+            // Carrega a estrutura em background caso precise voltar para os capítulos/livros
+            const response = await fetch(`/api/estrutura?versao=${versaoSelecionada}`);
+            estruturaCompleta = await response.json();
+            ordemOriginalLivros = Object.keys(estruturaCompleta);
+
+            // Carrega direto o texto do capítulo desejado
+            carregarTextoCapitulo(capitulo, false); // false para não duplicar o histórico
+            return;
+        }
+
+        // Fluxo normal caso entre pela raiz do site
         telaAtual = "VERSOES";
         tituloLeitura.textContent = "Selecione a Versão";
         btnVoltar.classList.add('oculto');
@@ -27,23 +47,20 @@ async function inicializarPortal() {
             return;
         }
 
-        // Renderiza as versões na grade de seleção
         let html = '<div class="grade-selecao">';
         versoes.forEach(v => {
             let nomeTratado = v.nome || v.id.replace('pt_', '').toUpperCase();
             html += `<button class="btn-opcao" onclick="selecionarVersao('${v.id}')">${nomeTratado}</button>`;
         });
         html += '</div>';
-        
         areaTextoBiblico.innerHTML = html;
 
-        // Configura eventos dos controles superiores
         btnVoltar.onclick = navegarVoltar;
         campoPesquisa.oninput = filtrarLivros;
 
     } catch (erro) {
-        console.error("Erro ao carregar versões:", erro);
-        areaTextoBiblico.innerHTML = "<div class='carregando' style='color:red;'>Erro de conexão com o servidor.</div>";
+        console.error("Erro ao inicializar:", erro);
+        areaTextoBiblico.innerHTML = "<div class='carregando' style='color:red;'>Erro de conexão.</div>";
     }
 }
 
@@ -120,11 +137,17 @@ window.selecionarLivro = function(livro) {
 };
 
 // 5. CARREGAR E EXIBIR O TEXTO DO CAPÍTULO
-window.carregarTextoCapitulo = async function(capitulo) {
+window.carregarTextoCapitulo = async function(capitulo, atualizarHistorico = true) {
     telaAtual = "TEXTO";
     areaTextoBiblico.innerHTML = "<div class='carregando'>Carregando capítulo...</div>";
     tituloLeitura.textContent = `${livroSelecionado} - Capítulo ${capitulo}`;
     
+    // Altera a barra de endereços para /leitura/versao/livro/capitulo
+    if (atualizarHistorico) {
+        const livroUrl = encodeURIComponent(livroSelecionado.toLowerCase());
+        history.pushState({ tela: "TEXTO", versao: versaoSelecionada, livro: livroSelecionado, cap: capitulo }, "", `/leitura/${versaoSelecionada}/${livroUrl}/${capitulo}`);
+    }
+
     try {
         const url = `/api/texto?versao=${versaoSelecionada}&livro=${encodeURIComponent(livroSelecionado)}&capitulo=${capitulo}`;
         const response = await fetch(url);
@@ -143,7 +166,7 @@ window.carregarTextoCapitulo = async function(capitulo) {
         window.scrollTo(0, 0);
     } catch (erro) {
         console.error("Erro ao carregar texto:", erro);
-        areaTextoBiblico.innerHTML = "<div class='carregando' style='color:red;'>Não foi possível renderizar o texto deste capítulo.</div>";
+        areaTextoBiblico.innerHTML = "<div class='carregando' style='color:red;'>Não foi possível carregar o texto.</div>";
     }
 };
 
@@ -151,11 +174,18 @@ window.carregarTextoCapitulo = async function(capitulo) {
 function navegarVoltar() {
     if (telaAtual === "TEXTO") {
         selecionarLivro(livroSelecionado);
+        history.pushState(null, "", "/"); // Reseta o link para a raiz quando sai do texto
     } else if (telaAtual === "CAPITULOS") {
         exibirGradeLivros();
+        history.pushState(null, "", "/");
     } else if (telaAtual === "LIVROS") {
         inicializarPortal();
+        history.pushState(null, "", "/");
     }
 }
+
+window.addEventListener('popstate', () => {
+    inicializarPortal();
+});
 
 document.addEventListener('DOMContentLoaded', inicializarPortal);
