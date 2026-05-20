@@ -1,0 +1,18 @@
+{
+  "name": "Portal da Bíblia",
+  "short_name": "Bíblia NVI",
+  "description": "Acesse a Bíblia Sagrada estruturada e rápida de qualquer lugar.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f6f9",
+  "theme_color": "#3182ce",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3004/3004401.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

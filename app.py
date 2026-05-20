@@ -30,6 +30,16 @@ def carregar_dados():
 def index():
     return render_template('index.html')
 
+# Rota para servir o Service Worker na raiz do site (Obrigatório para PWA)
+@app.route('/sw.js')
+def serve_sw():
+    return app.send_static_file('js/sw.js'), 200, {'Content-Type': 'application/javascript'}
+
+# Rota para servir o Manifest
+@app.route('/manifest.json')
+def serve_manifest():
+    return app.send_static_file('manifest.json'), 200, {'Content-Type': 'application/json'}
+
 # API: Retorna a lista de todos os livros disponíveis para preencher os menus
 @app.route('/api/livros', methods=['GET'])
 def obter_livros():
