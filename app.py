@@ -61,6 +61,11 @@ def index():
 def servir_sw():
     return send_from_directory(os.path.join(app.root_path, 'static', 'js'), 'sw.js', mimetype='application/javascript')
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 @app.route('/api/versoes')
 def api_versoes():
     """Rota para o Frontend descobrir quais versões existem no sistema."""
