@@ -2,7 +2,7 @@ import os
 import json
 import re
 
-# Dicionário de tradução corrigido (incluindo "Psalm" no singular)
+# Dicionário de tradução exato para mapear as pastas padrão
 DICIONARIO_LIVROS = {
     "Genesis": "Gênesis", "Exodus": "Êxodo", "Leviticus": "Levítico", "Numbers": "Números",
     "Deuteronomy": "Deuteronômio", "Joshua": "Josué", "Judges": "Juízes", "Ruth": "Rute",
@@ -35,18 +35,26 @@ def mapear_biblia(diretorio_raiz):
                 partes = caminho_relativo.split(os.sep)
                 
                 if len(partes) >= 3:
-                    pasta_livro = partes[0]
+                    pasta_livro = partes[0].strip()
                     pasta_capitulo = partes[1]
                     nome_arquivo = partes[2]
                     
-                    match_livro = regex_livro.match(pasta_livro)
-                    if match_livro:
-                        id_livro = int(match_livro.group(1))
-                        nome_original_livro = match_livro.group(2).strip()
+                    # Força a conversão manual se a pasta for no estilo "John 1", "John 2", etc.
+                    match_john = re.match(r"^John\s+(\d+)$", pasta_livro, re.IGNORECASE)
+                    if match_john:
+                        num_john = match_john.group(1)
+                        nome_original_livro = f"{num_john} John"
+                        id_livro = 60 + int(num_john) # Define um ID para ordenar depois de 1 Pedro e 2 Pedro
                     else:
-                        id_livro = 99
-                        nome_original_livro = pasta_livro
+                        match_livro = regex_livro.match(pasta_livro)
+                        if match_livro:
+                            id_livro = int(match_livro.group(1))
+                            nome_original_livro = match_livro.group(2).strip()
+                        else:
+                            id_livro = 99
+                            nome_original_livro = pasta_livro
                     
+                    # Busca o nome traduzido no dicionário (ex: "1 John" vira "1 João")
                     nome_livro = DICIONARIO_LIVROS.get(nome_original_livro, nome_original_livro)
                         
                     nums_capitulo = re.findall(r'\d+', pasta_capitulo)
@@ -74,12 +82,27 @@ def mapear_biblia(diretorio_raiz):
                         
                     dados_biblia[nome_livro]["capitulos"][str(num_capitulo)][str(num_versiculo)] = texto_versiculo
 
-    dados_ordenados = dict(sorted(dados_biblia.items(), key=lambda item: item[1]["id"]))
+    # --- PROCESSO DE ORDENAÇÃO COMPLETA ---
+    dados_completamente_ordenados = {}
+    livros_ordenados = sorted(dados_biblia.items(), key=lambda item: item[1]["id"])
+    
+    for nome_livro, conteudo_livro in livros_ordenados:
+        capitulos_ordenados = sorted(conteudo_livro["capitulos"].items(), key=lambda c: int(c[0]))
+        novo_dicionario_capitulos = {}
+        
+        for num_capitulo, versiculos in capitulos_ordenados:
+            versiculos_ordenados = sorted(versiculos.items(), key=lambda v: int(v[0]))
+            novo_dicionario_capitulos[num_capitulo] = dict(versiculos_ordenados)
+            
+        dados_completamente_ordenados[nome_livro] = {
+            "id": conteudo_livro["id"],
+            "capitulos": novo_dicionario_capitulos
+        }
 
     with open('biblia.json', 'w', encoding='utf-8') as f_json:
-        json.dump(dados_ordenados, f_json, ensure_ascii=False, indent=2)
+        json.dump(dados_completamente_ordenados, f_json, ensure_ascii=False, indent=2)
         
-    print("Sucesso! O arquivo 'biblia.json' foi atualizado com 'Salmos' corrigido.")
+    print("Sucesso! O arquivo 'biblia.json' foi gerado com '1 João', '2 João' e '3 João' corrigidos e ordenados.")
 
 if __name__ == "__main__":
     mapear_biblia('biblia')

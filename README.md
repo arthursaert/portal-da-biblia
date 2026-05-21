@@ -40,7 +40,7 @@ python app.py
 ```
 
 ## Créditos:
-- uemerson-silva/Obsidian-Bible-PT (bíblia NVI em Markdown)
+- MaatheusGois/bible (múltiplas versões em várias linguagens)
 - thiagobodruk/bible (múltiplas versões da bíblia em JSON)
 
 ## Licença
