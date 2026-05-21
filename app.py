@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory
 import os
 import json
 
@@ -26,7 +26,6 @@ def obter_versoes_disponiveis():
                 nome_base = nome_base[7:]
             
             # Formata o nome para exibição (substitui underscores por espaços e põe em maiúsculo)
-            # 'pt_acf' vira 'PT ACF'
             nome_exibicao = nome_base.replace('_', ' ').upper()
             
             versoes.append({
@@ -53,6 +52,14 @@ def carregar_dados_biblia(arquivo_versao):
 def index():
     # Renderiza a página principal do portal
     return render_template('index.html')
+
+# ==========================================================================
+# CORREÇÃO DO SERVICE WORKER (sw.js)
+# Pega o arquivo da pasta static/js/ e serve na raiz '/' com o mimetype correto
+# ==========================================================================
+@app.route('/sw.js')
+def servir_sw():
+    return send_from_directory(os.path.join(app.root_path, 'static', 'js'), 'sw.js', mimetype='application/javascript')
 
 @app.route('/api/versoes')
 def api_versoes():
@@ -93,7 +100,7 @@ def api_texto():
     
     if livro in dados_biblia and capitulo in dados_biblia[livro]['capitulos']:
         versiculos = dados_biblia[livro]['capitulos'][capitulo]
-        # Garante a ordenação correta dos versículos numéricos
+        # Converte a chave (número do versículo) para int para garantir a ordenação numérica correta
         versiculos_ordenados = dict(sorted(versiculos.items(), key=lambda item: int(item[0])))
         return jsonify(versiculos_ordenados)
         

@@ -28,6 +28,7 @@
     </header>
 
     <main class="container conteudo-principal">
+        
         <header class="cabecalho-leitura">
             <h2 id="titulo-leitura-atual">Selecione a Versão</h2>
         </header>
@@ -35,6 +36,37 @@
         <article id="area-texto-biblico" class="texto-biblico">
             <div class="carregando">Carregando versões...</div>
         </article>
+
+        <div class="downloads-biblias" style="margin-top: 40px;">
+            <h3>Baixar Bíblia Sagrada em PDF</h3>
+            <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 16px; margin-top: -8px;">
+                Baixe o arquivo completo para ler offline no seu computador, tablet ou celular.
+            </p>
+            
+            <ul class="lista-downloads">
+                <li>
+                    <span class="versao-nome">PT ACF (Almeida Corrigida Fiel)</span>
+                    <a href="{{ url_for('static', filename='biblias/pdf/Biblia_PT_ACF.pdf') }}" class="btn-download" download>
+                        Baixar PDF
+                    </a>
+                </li>
+
+                <li>
+                    <span class="versao-nome">PT AA (Almeida Atualizada)</span>
+                    <a href="{{ url_for('static', filename='biblias/pdf/Biblia_PT_AA.pdf') }}" class="btn-download" download>
+                        Baixar PDF
+                    </a>
+                </li>
+
+                <li>
+                    <span class="versao-nome">PT NVI (Nova Versão Internacional)</span>
+                    <a href="{{ url_for('static', filename='biblias/pdf/Biblia_PT_NVI.pdf') }}" class="btn-download" download>
+                        Baixar PDF
+                    </a>
+                </li>
+            </ul>
+        </div>
+
     </main>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
