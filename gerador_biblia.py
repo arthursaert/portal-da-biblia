@@ -51,15 +51,12 @@ body {
     text-align: center;
     margin-bottom: 40px;
 }
+/* Estilo unificado para o Livro + Capítulo na mesma linha */
 .cabecalho-capitulo h2 {
     font-size: 26pt;
     text-transform: uppercase;
     margin: 0;
-}
-.cabecalho-capitulo .num-capitulo {
-    font-size: 22pt;
     font-weight: bold;
-    margin-top: 5px;
 }
 .versiculo-linha {
     font-size: 13pt;
@@ -101,11 +98,11 @@ def gerar_pdf_biblia(caminho_json):
         capitulos_ordenados = sorted(info_livro["capitulos"].keys(), key=int)
         
         for num_capitulo in capitulos_ordenados:
+            # CORREÇÃO AQUI: Nome do livro e número juntos dentro da mesma tag h2
             html_livro += f"""
             <div class="bloco-capitulo">
                 <div class="cabecalho-capitulo">
-                    <h2>{nome_livro}</h2>
-                    <div class="num-capitulo">{num_capitulo}</div>
+                    <h2>{nome_livro} {num_capitulo}</h2>
                 </div>
             """
             
